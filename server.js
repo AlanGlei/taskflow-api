@@ -1,12 +1,10 @@
-// 1. Importar o Express
 const express = require('express');
-const TarefasRoutes = require('./src/routes/tarefas.routes');
-const UsuariosRoutes = require('./src/routes/usuarios.routes');
 
-// 2. Criar a aplicação Express
-const app = express();
+const tarefasRoutes  = require('./src/routes/tarefas.routes');
+const usuariosRoutes = require('./src/routes/usuarios.routes');
+const projetosRoutes = require('./src/routes/projetos.routes');
 
-// 3. Definir a porta
+const app   = express();
 const PORTA = 3001;
 
 app.use(express.json());
@@ -15,11 +13,14 @@ app.get('/', (req, res) => {
   res.json({ mensagem: 'TaskFlow API funcionando!' });
 });
 
-// Registrar as rotas
-app.use('/tarefas', TarefasRoutes);
-app.use('/usuarios', UsuariosRoutes);
+app.use('/tarefas',  tarefasRoutes);
+app.use('/usuarios', usuariosRoutes);
+app.use('/projetos', projetosRoutes);
 
-// Iniciar o servidor
+app.use((req, res) => {
+  res.status(404).json({ erro: 'Rota não encontrada' });
+});
+
 app.listen(PORTA, () => {
   console.log(`Servidor rodando em http://localhost:${PORTA}`);
 });
