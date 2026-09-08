@@ -1,11 +1,11 @@
 function temporizador(req, res, next) {
-  const inicio = Date.now();
+  const inicio  = Date.now();
+  const metodo  = req.method;
+  const url     = req.originalUrl || req.url; // captura antes do roteamento
 
-  // Interceptar o momento em que a resposta é enviada
-  // res.on('finish') dispara quando o Express termina de enviar a resposta
   res.on('finish', () => {
     const duracao = Date.now() - inicio;
-    console.log(`[TEMPO] ${req.method} ${req.url} — ${duracao}ms`);
+    console.log(`[TEMPO] ${metodo} ${url} — ${duracao}ms`);
   });
 
   next();
