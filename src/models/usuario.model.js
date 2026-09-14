@@ -1,7 +1,8 @@
 let usuarios = [
-  { id: 1, nome: 'Alice', email: 'alice@example.com' },
+  { id: 1, nome: 'Alice', email: 'alice@example.com', senha: 'senha123' },
+  { id: 2, nome: 'Alan', email: 'alan@example.com', senha: 'senha456' },
 ];
-let proximoId = 2;
+let proximoId = 3;
 
 module.exports = {
   listar: () => usuarios,
