@@ -1,9 +1,14 @@
 const schemas = {
+  id: {                                              //  NOVO
+    id: { obrigatorio: true, tipo: "inteiro" },      //  NOVO
+  },                                                 //  NOVO
+
   tarefa: {
-    texto:      { obrigatorio: true,  tipo: "string" },
-    prioridade: { obrigatorio: false, tipo: "string", enum: ["alta", "media", "baixa"] },
-    coluna:     { obrigatorio: false, tipo: "string", enum: ["afazer", "andamento", "concluido"] },
-    usuarioId:  { obrigatorio: false, tipo: "number" },
+    texto:        { obrigatorio: true, tipo: "string" },
+    coluna:       { obrigatorio: true, tipo: "string", enum: ["afazer", "andamento", "concluido"] },
+    usuario_id:   { obrigatorio: true, tipo: "inteiro" },   //  ALTERADO ("number" → "inteiro")
+    projeto_id:   { obrigatorio: true, tipo: "inteiro" },   //  ALTERADO ("number" → "inteiro")
+    idprioridade: { obrigatorio: true, tipo: "inteiro" },   //  ALTERADO ("number" → "inteiro")
   },
 
   usuario: {
