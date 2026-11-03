@@ -1,50 +1,56 @@
 const db = require('../database/db'); // ajuste para o seu arquivo de conexão
+const prisma = require('../database/prisma'); // ajuste para o seu arquivo de conexão
 
 module.exports = {
   listar: async () => {
-    const resultado = await db.query(
-      'SELECT * FROM projetos ORDER BY nome'
-    );
-    return resultado.rows;
+    const resultado = await prisma.projetos.findMany({
+      orderBy: {
+        nome: 'asc',
+      }
+    }); 
+    return resultado;
   },
 
   buscar: async (id) => {
-    const resultado = await db.query(
-      'SELECT * FROM projetos WHERE id = $1',
-      [id]
-    );
-    return resultado.rows[0] || null; // null = não existe → controller lança 404
+    const resultado = await prisma.projetos.findUnique({
+      where: {
+        id: id
+      }
+    });
+    return resultado || null; // null = não existe → controller lança 404
   },
 
   adicionar: async ({ nome, descricao, usuario_id }) => {
-    const resultado = await db.query(
-      `INSERT INTO projetos (nome, descricao, usuario_id)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [nome, descricao || null, usuario_id]
-    );
-    return resultado.rows[0];
+    const resultado = await prisma.projetos.create({
+      data: {
+        nome,
+        descricao: descricao || null,
+        usuario_id
+      }
+    });
+    return resultado;
   },
 
   atualizar: async (id, dados) => {
-    // COALESCE: campo não enviado mantém o valor atual (como o spread do array)
-    const resultado = await db.query(
-      `UPDATE projetos SET
-         nome       = COALESCE($1, nome),
-         descricao  = COALESCE($2, descricao),
-         usuario_id = COALESCE($3, usuario_id)
-       WHERE id = $4
-       RETURNING *`,
-      [dados.nome, dados.descricao, dados.usuario_id, id]
-    );
-    return resultado.rows[0] || null;
+    const resultado = await prisma.projetos.update({
+      where: {
+        id: id
+      },
+      data: {
+        nome: dados.nome || undefined,
+        descricao: dados.descricao || undefined,
+        usuario_id: dados.usuario_id || undefined
+      }
+    });
+    return resultado || null;
   },
 
   remover: async (id) => {
-    const resultado = await db.query(
-      'DELETE FROM projetos WHERE id = $1 RETURNING *',
-      [id]
-    );
-    return resultado.rows[0] || null;
+    const resultado = await prisma.projetos.delete({
+      where: {
+        id: id
+      }
+    });
+    return resultado || null;
   },
 };

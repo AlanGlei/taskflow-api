@@ -1,4 +1,12 @@
+const { Prisma } = require('@prisma/client');
+const traduzirErroPrisma = require('../utils/traduzirErroPrisma');
+
+
 function tratarErros(erro, req, res, next) {
+  if (erro instanceof Prisma.PrismaClientKnownRequestError) {
+    erro = traduzirErroPrisma(erro, req.method);
+  }
+
   const status = erro.status || 500;
   // Detalhe técnico fica no terminal
   console.error('[ERRO]', req.method, req.url, erro.message);

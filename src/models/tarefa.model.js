@@ -1,5 +1,5 @@
 const pool = require('../database/db');
-
+const prisma = require('../database/prisma'); // ajuste para o seu arquivo de conexão
 
 let tarefas = [
   { id: 1, texto: 'Estudar Node',   prioridade: 'alta',  coluna: 'afazer',    usuarioId: null, projetoId: null, concluidaEm: null },
@@ -8,34 +8,91 @@ let tarefas = [
 ];
 let proximoId = 4;
 
+function formatarTarefa(tarefa) {
+  const { projetos, usuarios, prioridades, ...resto } = tarefa;
+  return {
+    ...resto,
+    projeto: projetos?.nome,
+    usuario: usuarios?.nome,
+    prioridade: prioridades?.descricao,
+    prioridade_cor: prioridades?.cor,
+  };
+}
+
+const tarefaJoin = {
+  prioridades: { select: { descricao: true, cor: true } },
+  projetos: { select: { nome: true } },
+  usuarios: { select: { nome: true } }
+}
+
+
 const tarefaModel = {
   // ── Leitura básica ──────────────────────────────────────────────────────
   // listar: () => tarefas,
 
   listar: async () => {
-    const result = await pool.query(
-      //'SELECT * FROM tarefas ORDER BY id'
-      `SELECT t.*, p.nome as projeto, u.nome as usuario, pr.descricao as prioridade, pr.cor as prioridade_cor FROM tarefas t
-        inner join projetos p on t.projeto_id = p.id 
-        inner join usuarios u on t.usuario_id = u.id
-        inner join prioridades pr on t.idprioridade = pr.id 
-        ORDER BY t.id`
-    );
-    return result.rows;
+
+    const result = await prisma.tarefas.findMany({
+      select: {
+        id: true,
+        texto: true,
+        coluna: true,
+        usuario_id: true,
+        projeto_id: true,
+        idprioridade: true,
+        concluida_em: true,
+        iniciada_em: true,
+        ordem: true,
+        ...tarefaJoin
+      },
+      orderBy: { id: 'asc' }
+    });
+
+    return result.map(formatarTarefa);
+    
+
+    // const result = await pool.query(
+    //   //'SELECT * FROM tarefas ORDER BY id'
+    //   `SELECT t.*, p.nome as projeto, u.nome as usuario, pr.descricao as prioridade, pr.cor as prioridade_cor FROM tarefas t
+    //     inner join projetos p on t.projeto_id = p.id 
+    //     inner join usuarios u on t.usuario_id = u.id
+    //     inner join prioridades pr on t.idprioridade = pr.id 
+    //     ORDER BY t.id`
+    // );
+    // return result.rows;
   },
 
   // buscar: (id) => tarefas.find(t => t.id === id),
 
   buscar: async (id) => {
-    const result = await pool.query(
-        `SELECT t.*, p.nome as projeto, u.nome as usuario, pr.descricao as prioridade, pr.cor as prioridade_cor FROM tarefas t
-        inner join projetos p on t.projeto_id = p.id 
-        inner join usuarios u on t.usuario_id = u.id 
-        inner join prioridades pr on t.idprioridade = pr.id 
-        WHERE t.id = $1`, [id]
-    );
-    return result.rows[0] || null;
-  },
+    const result = await prisma.tarefas.findUnique({
+      where: { id: id },
+      select: {
+        id: true,
+        texto: true,
+        coluna: true,
+        usuario_id: true,
+        projeto_id: true,
+        idprioridade: true,
+        concluida_em: true,
+        iniciada_em: true,
+        ordem: true,
+        ...tarefaJoin
+      },
+    });
+    return result ? formatarTarefa(result) : null;
+  },      
+  
+  // buscar: async (id) => {
+  //   const result = await pool.query(
+  //       `SELECT t.*, p.nome as projeto, u.nome as usuario, pr.descricao as prioridade, pr.cor as prioridade_cor FROM tarefas t
+  //       inner join projetos p on t.projeto_id = p.id 
+  //       inner join usuarios u on t.usuario_id = u.id 
+  //       inner join prioridades pr on t.idprioridade = pr.id 
+  //       WHERE t.id = $1`, [id]
+  //   );
+  //   return result.rows[0] || null;
+  // },
 
   listarPorColuna: async (coluna) => {
     const result = await pool.query(
@@ -147,19 +204,34 @@ resumo: async () => {
 
   // ── Escrita ─────────────────────────────────────────────────────────────
 
-adicionar: async ({ texto, idprioridade, coluna, usuario_id, projeto_id, ordem }) => {
-  const result = await pool.query(
-    `INSERT INTO tarefas (texto, idprioridade, coluna, usuario_id, projeto_id, ordem)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [texto, idprioridade || 2, coluna || 'afazer', usuario_id, projeto_id, ordem || 0]
-  );
-  return tarefaModel.buscar(result.rows[0].id);
+adicionar: async({ texto, idprioridade, coluna, usuario_id, projeto_id, ordem }) => {
+  const tarefa = await prisma.tarefas.create({
+    data: {
+      texto: texto,
+      idprioridade: idprioridade || 2,
+      coluna: coluna || 'afazer',
+      usuario_id: usuario_id,
+      projeto_id: projeto_id,
+      ordem: ordem || 0
+    },
+    include: tarefaJoin
+  });
+  return formatarTarefa(tarefa);
 },
 
+// adicionar: async ({ texto, idprioridade, coluna, usuario_id, projeto_id, ordem }) => {
+//   const result = await pool.query(
+//     `INSERT INTO tarefas (texto, idprioridade, coluna, usuario_id, projeto_id, ordem)
+//      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+//     [texto, idprioridade || 2, coluna || 'afazer', usuario_id, projeto_id, ordem || 0]
+//   );
+//   return tarefaModel.buscar(result.rows[0].id);
+// },
 
 atualizar: async (id, dados) => {
-  const resultadoAtual = await pool.query('SELECT * FROM tarefas WHERE id = $1', [id]);
-  const tarefaAtual = resultadoAtual.rows[0];
+  const tarefaAtual = await prisma.tarefas.findUnique({
+    where: { id: id },
+  });
   if (!tarefaAtual) return null; // id não existe → controller lança 404
 
   const concluidaEm = dados.coluna === 'concluido' ? new Date() : null;
@@ -171,27 +243,77 @@ atualizar: async (id, dados) => {
     iniciadaEm = new Date();
   }
 
-  await pool.query(
-    `UPDATE tarefas SET
-       texto        = $1,
-       coluna       = $2,
-       usuario_id   = $3,
-       projeto_id   = $4,
-       idprioridade = $5,
-       concluida_em = $6,
-       iniciada_em  = $7
-     WHERE id = $8`,
-    [dados.texto, dados.coluna, dados.usuario_id, dados.projeto_id,
-     dados.idprioridade, concluidaEm, iniciadaEm, id]
-  );
+  const tarefaAtualizada = await prisma.tarefas.update({
+    where: { id: id },
+    data: {
+      texto: dados.texto,
+      coluna: dados.coluna,
+      usuario_id: dados.usuario_id,
+      projeto_id: dados.projeto_id,
+      idprioridade: dados.idprioridade,
+      concluida_em: concluidaEm,
+      iniciada_em: iniciadaEm,
+      ordem: dados.ordem || 0
+    },
+    include: tarefaJoin
+  });
 
-  return tarefaModel.buscar(id);
+  return formatarTarefa(tarefaAtualizada);
 },
 
+
+// atualizar: async (id, dados) => {
+//   const resultadoAtual = await pool.query('SELECT * FROM tarefas WHERE id = $1', [id]);
+//   const tarefaAtual = resultadoAtual.rows[0];
+//   if (!tarefaAtual) return null; // id não existe → controller lança 404
+
+//   const concluidaEm = dados.coluna === 'concluido' ? new Date() : null;
+
+//   let iniciadaEm = tarefaAtual.iniciada_em;
+//   if (tarefaAtual.coluna === 'andamento' && dados.coluna === 'afazer') {
+//     iniciadaEm = null;
+//   } else if (tarefaAtual.coluna === 'afazer' && dados.coluna === 'andamento') {
+//     iniciadaEm = new Date();
+//   }
+
+//   await pool.query(
+//     `UPDATE tarefas SET
+//        texto        = $1,
+//        coluna       = $2,
+//        usuario_id   = $3,
+//        projeto_id   = $4,
+//        idprioridade = $5,
+//        concluida_em = $6,
+//        iniciada_em  = $7
+//      WHERE id = $8`,
+//     [dados.texto, dados.coluna, dados.usuario_id, dados.projeto_id,
+//      dados.idprioridade, concluidaEm, iniciadaEm, id]
+//   );
+
+//   return tarefaModel.buscar(id);
+// },
+
   remover: async (id) => {
-    const resultado = await pool.query('DELETE FROM tarefas WHERE id = $1 RETURNING id', [id]);
-    return tarefaModel.buscar(resultado.rows[0].id) || null; // null = não existe → controller lança 404
+    try{
+    const resultado = await prisma.tarefas.delete({
+      where: { id: id },
+    });
+    return formatarTarefa(resultado);
+    }
+    catch (error) {
+      if (error.code === 'P2025') {
+        return null; // id não existe → controller lança 404
+      }
+      // console.log('Objeto de erro do Prisma: ', {error});
+      throw error; // relança outros erros
+    }
+
   },
+
+  // remover: async (id) => {
+  //   const resultado = await pool.query('DELETE FROM tarefas WHERE id = $1 RETURNING id', [id]);
+  //   return tarefaModel.buscar(resultado.rows[0].id) || null; // null = não existe → controller lança 404
+  // },
   
 };
 

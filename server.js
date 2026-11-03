@@ -14,6 +14,15 @@ const autenticar = require('./src/middlewares/autenticar');
 const pool = require('./src/database/db');
 const tratarErros = require('./src/middlewares/erro.middleware');
 const prioridadesRoutes = require('./src/routes/prioridades.routes');
+
+const swaggerUi = require('swagger-ui-express');
+
+const SWAGGER_CDN = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14';
+
+
+const openapi = require('./src/docs/openapi');
+
+
 const app   = express();
 const PORTA = process.env.PORTA || 3001;
 
@@ -46,6 +55,19 @@ app.use('/usuarios', usuariosRoutes);
 app.use('/projetos', projetosRoutes);
 app.use('/auth', authRoutes);
 app.use('/prioridades', autenticar,prioridadesRoutes);
+
+
+// Swagger
+//app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, {
+  customCssUrl: `${SWAGGER_CDN}/swagger-ui.css`,
+  customJs: [
+    `${SWAGGER_CDN}/swagger-ui-bundle.js`,
+    `${SWAGGER_CDN}/swagger-ui-standalone-preset.js`,
+  ],
+}));
+
+
 
 // ── Rota 404 genérica — sempre por último ───────────────────────────────────
 app.use((req, res) => {
