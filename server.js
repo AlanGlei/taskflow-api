@@ -59,6 +59,7 @@ app.use('/prioridades', autenticar,prioridadesRoutes);
 
 // Swagger
 //app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi));
+
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi, {
   customCssUrl: `${SWAGGER_CDN}/swagger-ui.css`,
   customJs: [
