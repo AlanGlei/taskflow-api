@@ -1,5 +1,6 @@
 const pool = require('../database/db');
 const prisma = require('../database/prisma'); // ajuste para o seu arquivo de conexão
+const formatarTarefa = require('../utils/formatarTarefa')
 
 let tarefas = [
   { id: 1, texto: 'Estudar Node',   prioridade: 'alta',  coluna: 'afazer',    usuarioId: null, projetoId: null, concluidaEm: null },
@@ -8,16 +9,16 @@ let tarefas = [
 ];
 let proximoId = 4;
 
-function formatarTarefa(tarefa) {
-  const { projetos, usuarios, prioridades, ...resto } = tarefa;
-  return {
-    ...resto,
-    projeto: projetos?.nome,
-    usuario: usuarios?.nome,
-    prioridade: prioridades?.descricao,
-    prioridade_cor: prioridades?.cor,
-  };
-}
+// function formatarTarefa(tarefa) {
+//   const { projetos, usuarios, prioridades, ...resto } = tarefa;
+//   return {
+//     ...resto,
+//     projeto: projetos?.nome,
+//     usuario: usuarios?.nome,
+//     prioridade: prioridades?.descricao,
+//     prioridade_cor: prioridades?.cor,
+//   };
+// }
 
 const tarefaJoin = {
   prioridades: { select: { descricao: true, cor: true } },

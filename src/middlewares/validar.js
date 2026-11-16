@@ -15,7 +15,9 @@ function validar(schema, origem) {
         erros.push(`O campo '${campo}' é obrigatório`);
         continue; // não testar as demais regras
       }
-      // 2 — Tipo incorreto (só se o valor foi enviado)
+      
+      // não testar as demais regras se o campo não veio
+      if (ausente) continue; 
 
       // 2 — Tipo
       if (regras.tipo === "inteiro") {
